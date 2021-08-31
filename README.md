@@ -56,7 +56,7 @@ $ sudo docker container ls
 
 ### 3. Make Docker Image (Client)
 
-#### Create a base image
+#### Create a base image - pytorch/pytorch
 
 ```bash
 $ sudo docker pull pytorch/pytorch
@@ -69,16 +69,79 @@ $ sudo docker ps -a
 $ sudo docker start dev-env1
 ```
 
-##### # Issue 01
+<br/>
+
+##### # Issue 01 - Closed
 
 ```bash
-CONTAINER ID   IMAGE             COMMAND		CREATED         STATUS
-62ab3c761e8c   pytorch/pytorch   "/bin/bash"    7 minutes ago   Exited (0)
+IMAGE             COMMAND		CREATED			STATUS
+pytorch/pytorch   "/bin/bash"	7 minutes ago	Exited (0)
+```
+
+```bash
+$ sudo docker run -d -it --name dev-env2 pytorch/pytorch
+```
+
+```bash
+IMAGE             STATUS					NAMES
+pytorch/pytorch   Up 8 seconds				dev-env2
+pytorch/pytorch   Exited (0) 13 minutes ago	dev-env1
+registry          Up 5 hours				local-registry
+```
+
+```bash
+$ sudo docker exec -it dev-env2 bash
+:/# apt-get update
 ```
 
 <br/>
 
-### 4. from Local Registry to AWS
+`docker diff`
 
+```bash
+$ sudo docker diff dev-env2
+C /var
+C /var/lib
+C /var/lib/apt
+C /var/lib/apt/lists
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_InRelease
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/lock
+A /var/lib/apt/lists/partial
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_InRelease
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_InRelease
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/auxfiles
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_InRelease
+C /root
+A /root/.bash_history
 ```
+
+<br/>
+
+#### Create a base image - ubuntu:18.04
+
+```bash
+$ sudo docker pull ubuntu:18.04
+$ sudo docker run -d -it --name dev-env3 ubuntu
+$ sudo docker exec -it dev-env3 bash
+:/# apt-get update
 ```
+
+<br/>
+
+### 4. from Local Registry Server to AWS
+
+<br/>
