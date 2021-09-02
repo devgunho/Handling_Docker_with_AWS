@@ -142,6 +142,121 @@ $ sudo docker exec -it dev-env3 bash
 
 <br/>
 
-### 4. from Local Registry Server to AWS
+#### Dockerfile Example
+
+```dockerfile
+FROM ubuntu:18.04
+#set root password
+RUN echo "root:ubuntu" | chpasswd
+# install packages
+RUN apt-get update \
+    && apt-get install --yes --force-yes --no-install-recommends \
+        sudo \
+        software-properties-common \
+        xorg \
+        xserver-xorg \
+        xfce4 \
+        gnome-themes-standard \
+        gtk2-engines-pixbuf \
+        file-roller \
+        evince \
+        gpicview \
+        leafpad \
+        xfce4-whiskermenu-plugin \
+        ttf-ubuntu-font-family \
+        dbus-x11 \
+        vnc4server \
+        vim \
+        xfce4-terminal \
+        xrdp \
+        xorgxrdp
+# add the user and designate sudo authority
+RUN adduser ubuntu
+RUN echo "ubuntu:ubuntu" | chpasswd
+RUN echo "ubuntu ALL=(ALL:ALL) ALL" >> /etc/sudoers
+#set the port number of xrdp
+RUN sed -i 's/3389/port_number/' /etc/xrdp/xrdp.ini
+#install xubuntu-desktop
+RUN apt-get install --yes --force-yes --no-install-recommends \
+        xubuntu-desktop \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# insert entrypoint.sh and set ENTRYPOINT
+ADD entrypoint.sh /entrypoint.sh
+ENTRYPOINT /entrypoint.sh
+```
+
+`entrypoint.sh`
+
+```sh
+#!/bin/bash
+# create a dbus system daemon
+service dbus start
+# create the sock dir properly
+/bin/sh /usr/share/xrdp/socksetup
+# run xrdp and xrdp-sesman in the foreground so the logs show in docker
+xrdp-sesman -ns &
+xrdp -ns &
+# run shell for interface
+/bin/bash
+```
+
+<br/>
+
+`build-run.sh`
+
+- `./build-run.sh [PORT] [IMAGE NAME] [CONTAINER NAME]`
+
+```sh
+#!/bin/bash
+#edit the port number in Dockerfile
+sed -i 's/port_number/'$1'/' ./Dockerfile
+#start building image from Dockerfile
+docker build -t $2 .
+#run container from built image
+docker container run -d -it --name $3 -p $1:$1 $2
+docker container start $3
+#return Dockerfile into first state
+sed -i 's/'$1'/port_number/' ./Dockerfile
+```
+
+<br/>
+
+### 4. Docker Registration
+
+```bash
+$ docker push localhost:5000/dev-env1
+$ docker push localhost:5000/dev-env2
+$ docker push localhost:5000/dev-env3
+```
+
+<br/>
+
+##### # Issue 02
+
+```bash
+An image does not exist locally with the tag: localhost:5000/dev-env1
+```
+
+<br/>
+
+```bash
+$ sudo apt install curl
+$ curl -X GET http://localhost:5000/v2/_catalog
+{"repositories":[]}
+```
+
+<br/>
+
+##### # Issue 03
+
+```bash
+$ curl -X GET https://X.X.X.X
+curl: (7) Failed to connect to X.X.X.X port 443: Connection refused
+```
+
+<br/>
+
+### 5. from Local Registry Server to AWS
 
 <br/>
