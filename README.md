@@ -40,7 +40,7 @@ $ sudo docker info
 $ sudo service docker stop
 $ vi /etc/docker/daemon.json
 {
-	"insecure-registries":["X.X.X.X:5000"]
+	"insecure-registries":["{ServerIP}:5000"]
 }
 $ sudo docker info
  Insecure Registries:
@@ -225,6 +225,7 @@ sed -i 's/'$1'/port_number/' ./Dockerfile
 ### 4. Docker Registration
 
 ```bash
+$ docker build --tag {ServerIP}:5000/dev-env2 .
 $ docker push localhost:5000/dev-env1
 $ docker push localhost:5000/dev-env2
 $ docker push localhost:5000/dev-env3
@@ -251,8 +252,8 @@ $ curl -X GET http://localhost:5000/v2/_catalog
 ##### # Issue 03
 
 ```bash
-$ curl -X GET https://X.X.X.X
-curl: (7) Failed to connect to X.X.X.X port 443: Connection refused
+$ curl -X GET https://{hostIP}
+curl: (7) Failed to connect to {ServerIP} port 443: Connection refused
 ```
 
 <br/>
