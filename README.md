@@ -25,6 +25,28 @@ $ ifconfig
 
 <br/>
 
+### 2. Docker container from AWS (Client)
+
+```bash
+$ sudo apt-get update
+$ sudo apt-get install docker.io
+$ sudo docker pull ubuntu:18.04
+$ sudo docker images
+$ sudo docker run -d -it --name team-a-container1 ubuntu:18.04
+$ sudo docker attach team-a-container1
+:/# apt-get update
+:/# apt-get install git
+:/# git clone ~
+:/# exit
+```
+
+```bash
+$ sudo docker start team-a-container1
+$ sudo docker attach team-a-container1
+```
+
+<br/>
+
 ### 2. Docker Registry Server setting (Server)
 
 ```bash
@@ -258,6 +280,3 @@ curl: (7) Failed to connect to {ServerIP} port 443: Connection refused
 
 <br/>
 
-### 5. from Local Registry Server to AWS
-
-<br/>
