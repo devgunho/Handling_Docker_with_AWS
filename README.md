@@ -47,6 +47,35 @@ $ sudo docker attach team-a-container1
 
 <br/>
 
+#### docker container commit
+
+````bash
+$ docker container commit -a "devgun" -m "test comment" team-a-container1 team-a/submit:1.0
+````
+
+<br/>
+
+#### A. push to Amazon ECR
+
+```bash
+$ sudo apt install awscli
+$ docker tag team-a/submit:1.0 {aws_account_id}.dkr.ecr.ap-northeast-2.amazonaws.com/team-a/submit:1.0
+$ docker push {aws_account_id}.dkr.ecr.ap-northeast-2.amazonaws.com/team-a/submit:1.0
+```
+
+<br/>
+
+#### B. push to dockerhub
+
+```bash
+$ docker tag team-a/submit:1.0 devgunho/team-a-submit:1.0
+$ docker push devgunho/team-a-submit:1.0
+$ docker tag team-a/submit:1.0 devgunho/team-b-submit:1.0
+$ docker push devgunho/team-b-submit:1.0
+```
+
+<br/>
+
 ### 2. Docker Registry Server setting (Server)
 
 ```bash
