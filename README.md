@@ -31,6 +31,7 @@ $ ifconfig
 $ sudo apt-get update
 $ sudo apt-get install docker.io
 $ sudo docker login
+
 $ sudo docker pull ubuntu:18.04
 $ sudo docker images
 $ sudo docker run -d -it --name team-a-container1 ubuntu:18.04
@@ -73,6 +74,17 @@ $ docker tag team-a-submit:1.0 devgunho/team-a-submit:1.0
 $ docker push devgunho/team-a-submit:1.0
 $ docker tag team-a-submit:1.0 devgunho/team-b-submit:1.0
 $ docker push devgunho/team-b-submit:1.0
+```
+
+#### pull from dockerhub
+
+```bash
+```
+
+#### `docker cp` from container to host
+
+```bash
+$ sudo docker cp team-a-container-submit-1:/Challenge-Master /
 ```
 
 <br/>
