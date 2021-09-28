@@ -1,4 +1,4 @@
-# Docker A to Z
+# Handling Docker Container A to Z
 
 **Make Docker Private Registry & Manage docker containers with AWS**
 
@@ -25,11 +25,12 @@ $ ifconfig
 
 <br/>
 
-### 2. Docker container from AWS (Client)
+### 2-A. Docker container from AWS (Client)
 
 ```bash
 $ sudo apt-get update
 $ sudo apt-get install docker.io
+$ sudo docker login
 $ sudo docker pull ubuntu:18.04
 $ sudo docker images
 $ sudo docker run -d -it --name team-a-container1 ubuntu:18.04
@@ -50,7 +51,7 @@ $ sudo docker attach team-a-container1
 #### docker container commit
 
 ````bash
-$ docker container commit -a "devgun" -m "test comment" team-a-container1 team-a/submit:1.0
+$ docker container commit -a "devgun" -m "test comment" team-a-container1 team-a-submit:1.0
 ````
 
 <br/>
@@ -68,15 +69,15 @@ $ docker push {aws_account_id}.dkr.ecr.ap-northeast-2.amazonaws.com/team-a/submi
 #### B. push to dockerhub
 
 ```bash
-$ docker tag team-a/submit:1.0 devgunho/team-a-submit:1.0
+$ docker tag team-a-submit:1.0 devgunho/team-a-submit:1.0
 $ docker push devgunho/team-a-submit:1.0
-$ docker tag team-a/submit:1.0 devgunho/team-b-submit:1.0
+$ docker tag team-a-submit:1.0 devgunho/team-b-submit:1.0
 $ docker push devgunho/team-b-submit:1.0
 ```
 
 <br/>
 
-### 2. Docker Registry Server setting (Server)
+### 2-B. Docker Registry Server setting (Private Server)
 
 ```bash
 $ sudo apt-get install docker.io
