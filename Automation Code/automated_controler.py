@@ -1,10 +1,12 @@
 import os
 
-for (path, dir, files) in os.walk("./private"):
-    for filename in files:
-        ext = os.path.splitext(filename)[-1]
-        if ext == '.pem':
-            print("%s/%s" % (path, filename))
+
+def aws_connect():
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("%s/%s" % (path, filename))
 
 # import paramiko
 # k = paramiko.RSAKey.from_private_key_file("./mykey.pem")
@@ -21,3 +23,7 @@ for (path, dir, files) in os.walk("./private"):
 #     print("Errors")
 #     print stderr.read()
 # c.close()
+
+
+if __name__ == "__main__":
+    aws_connect()
