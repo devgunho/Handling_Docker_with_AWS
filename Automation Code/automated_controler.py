@@ -53,3 +53,6 @@ if __name__ == "__main__":
     print("[00] Automated Controler Start")
     target_ec2 = get_aws_ec2_info()
     aws_connect(target_ec2)
+
+    # To Do List
+    # sftp
