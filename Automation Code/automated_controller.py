@@ -29,7 +29,7 @@ def aws_connect(target_ec2):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
             if ext == '.pem':
-                print("└─[*] Private key: %s/%s" % (path, filename))
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
                 fullpath = path+"/"+filename
                 k = paramiko.RSAKey.from_private_key_file(fullpath)
                 c = paramiko.SSHClient()
@@ -39,7 +39,8 @@ def aws_connect(target_ec2):
                 c.connect(target_ec2, username="ubuntu", pkey=k)
                 print("└─[+] Connected!")
 
-                commands = ["ls -al"]
+                # Run Command
+                commands = ["cat /home/ubuntu/workspace/main.py"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
