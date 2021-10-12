@@ -1,3 +1,4 @@
+from paramiko import transport
 import pysftp
 import csv
 import os
@@ -51,10 +52,44 @@ def aws_connect(target_ec2):
                 c.close()
 
 
+def aws_sftp(target_ec2):
+    # find .pem file
+    print("[02] AWS Connection...")
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
+                fullpath = path+"/"+filename
+                k = paramiko.RSAKey.from_private_key_file(fullpath)
+                c = paramiko.SSHClient()
+                c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print("└─[*] Connecting...")
+
+                c.connect(target_ec2, username="ubuntu", pkey=k)
+                print("└─[+] Connected!")
+
+                sftp = c.open_sftp()
+                local_path = "./transmission/A.txt"
+                target_path = '/home/ubuntu/A.txt'
+                sftp.put(local_path, target_path)
+
+                # Run Command
+                commands = ["ls /home/ubuntu"]
+                for command in commands:
+                    print("└─[*] Executing: {}".format(command))
+                    stdin, stdout, stderr = c.exec_command(command)
+                    print(stdout.read())
+                    print("└─[*] Errors")
+                    print(stderr.read())
+                c.close()
+
+
 if __name__ == "__main__":
     print("[00] Automated Controler Start")
     target_ec2 = get_aws_ec2_info()
     aws_connect(target_ec2)
+    aws_sftp(target_ec2)
 
 
 # To Do List
