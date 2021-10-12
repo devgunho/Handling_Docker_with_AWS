@@ -1,3 +1,4 @@
+from threading import local
 from paramiko import transport
 import pysftp
 import csv
@@ -7,7 +8,7 @@ import paramiko
 
 def get_aws_ec2_info():
     # find aws ec2 info from ./private/ec2_info.csv
-    print("[01] Select AWS Server")
+    print("\n==========[01] Select AWS Server")
     target_ec2 = ""
     ec2_info = []
     f = open("./private/ec2_info.csv", "r", encoding="utf-8")
@@ -26,7 +27,7 @@ def get_aws_ec2_info():
 
 def aws_connect(target_ec2):
     # find .pem file
-    print("[02] AWS Connection...")
+    print("\n==========[02] AWS Connection...")
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -42,19 +43,20 @@ def aws_connect(target_ec2):
                 print("└─[+] Connected!")
 
                 # Run Command
-                commands = ["cat /home/ubuntu/workspace/main.py"]
+                commands = ["sudo mkdir /home/ubuntu/transmission",
+                            "sudo chmod -R 777 /home/ubuntu/transmission"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
-                    print(stdout.read())
-                    print("└─[*] Errors")
-                    print(stderr.read())
+                    print("└─[+]", stdout.read())
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
                 c.close()
 
 
 def aws_sftp(target_ec2):
     # find .pem file
-    print("[02] AWS Connection...")
+    print("\n==========[03] Sending...")
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -70,47 +72,110 @@ def aws_sftp(target_ec2):
                 print("└─[+] Connected!")
 
                 sftp = c.open_sftp()
-                local_path = "./transmission/A.txt"
-                target_path = '/home/ubuntu/A.txt'
-                sftp.put(local_path, target_path)
+
+                entries = os.listdir('./transmission')
+                for entry in entries:
+                    print("└──[*] Send target:", entry, end=' ')
+                    local_path = "./transmission/"
+                    local_path = os.path.join(local_path, entry)
+                    print(local_path)
+                    target_path = "/home/ubuntu/transmission/"
+                    target_path = os.path.join(target_path, entry)
+                    sftp.put(local_path, target_path)
 
                 # Run Command
-                commands = ["ls /home/ubuntu"]
+                commands = ["sudo mv /home/ubuntu/transmission /",
+                            "ls /transmission"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
-                    print(stdout.read())
-                    print("└─[*] Errors")
-                    print(stderr.read())
+                    print("└─[+]", stdout.read())
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
+                c.close()
+
+
+def docker_image_handling(target_ec2):
+    # find .pem file
+    print("\n==========[04] Docker Setting...")
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
+                fullpath = path+"/"+filename
+                k = paramiko.RSAKey.from_private_key_file(fullpath)
+                c = paramiko.SSHClient()
+                c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print("└─[*] Connecting...")
+
+                c.connect(target_ec2, username="ubuntu", pkey=k)
+                print("└─[+] Connected!")
+
+                # Get dockerhub info (dockerhub_info.csv)
+                dockerhub_login = []
+                dockerhub_tag = ""
+                f = open("./private/dockerhub_info.csv", "r", encoding="utf-8")
+                lines = csv.reader(f)
+                next(lines, None)
+                cnt = 1
+                dockerhub_info = []
+                for line in lines:
+                    print("└─[*]", cnt, ":", line[0],
+                          "|", line[1], "|", line[2])
+                    temp = []
+                    temp.append(line[0])
+                    temp.append(line[1])
+                    temp.append(line[2])
+                    dockerhub_info.append(temp)
+                    cnt += 1
+                print("└──[*] Select Docker Image: ", end="")
+                target_dockerhub_num = input()
+                target_dockerhub_num = int(target_dockerhub_num) - 1
+                dockerhub_login.append(
+                    dockerhub_info[target_dockerhub_num][0])  # Username
+                dockerhub_login.append(
+                    dockerhub_info[target_dockerhub_num][1])  # Password
+                # target image
+                dockerhub_tag = dockerhub_info[target_dockerhub_num][2]
+                print(dockerhub_login, dockerhub_tag)
+
+                # make login cmd
+                login_cmd = "sudo docker login -u "
+                login_cmd = login_cmd + \
+                    dockerhub_login[0] + " -p "+dockerhub_login[1]
+                print(login_cmd)
+
+                # docker pull cmd
+                docker_pull = "sudo docker pull"
+                docker_pull = docker_pull + dockerhub_tag
+
+                # Run Command
+                commands = ["sudo docker logout",
+                            login_cmd,
+                            "sudo docker info | grep Username",
+                            docker_pull,
+                            "sudo docker images"]
+                for command in commands:
+                    print("└─[*] Executing: {}".format(command))
+                    stdin, stdout, stderr = c.exec_command(command)
+                    print("└─[+]", stdout.read())
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
                 c.close()
 
 
 if __name__ == "__main__":
-    print("[00] Automated Controler Start")
+    print("==========[00] Automated Controler Start")
+
+    # Select ec2
     target_ec2 = get_aws_ec2_info()
+
+    # ec2 connection & mkdir
     aws_connect(target_ec2)
+
+    # Send files (transmission)
     aws_sftp(target_ec2)
 
-
-# To Do List
-# sftp
-# _______________________________________
-# import pysftp
-
-# myHostname = "yourserverdomainorip.com"
-# myUsername = "root"
-# myPassword = "12345"
-
-# with pysftp.Connection(host=myHostname, username=myUsername, password=myPassword) as sftp:
-#     print "Connection succesfully stablished ... "
-
-#     # Define the file that you want to upload from your local directorty
-#     # or absolute "C:\Users\sdkca\Desktop\TUTORIAL2.txt"
-#     localFilePath = './TUTORIAL2.txt'
-
-#     # Define the remote path where the file will be uploaded
-#     remoteFilePath = '/var/integraweb-db-backups/TUTORIAL2.txt'
-
-#     sftp.put(localFilePath, remoteFilePath)
-
-# # connection closed automatically at the end of the with-block
+    # Docker image & container making
+    docker_image_handling(target_ec2)

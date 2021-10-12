@@ -1,0 +1,2 @@
+dockerhub_id, dockerhub_pw, repository_tag
+id, pw, django:1
