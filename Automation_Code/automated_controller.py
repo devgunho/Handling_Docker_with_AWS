@@ -56,7 +56,7 @@ def aws_connect(target_ec2):
 
 def aws_sftp(target_ec2):
     # find .pem file
-    print("\n==========[03] Sending...")
+    print("\n==========[03] File transmission (Controller to Worker (EC2))")
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -147,15 +147,53 @@ def docker_image_handling(target_ec2):
                 print(login_cmd)
 
                 # docker pull cmd
-                docker_pull = "sudo docker pull"
-                docker_pull = docker_pull + dockerhub_tag
+                docker_pull_cmd = "sudo docker pull"
+                docker_pull_cmd = docker_pull_cmd + dockerhub_tag
+
+                # docker run cmd
+                docker_run_cmd = "sudo docker run -dit --name" + \
+                    " worker-container" + dockerhub_tag
 
                 # Run Command
                 commands = ["sudo docker logout",
                             login_cmd,
                             "sudo docker info | grep Username",
-                            docker_pull,
-                            "sudo docker images"]
+                            docker_pull_cmd,
+                            "sudo docker images",
+                            "sudo docker ps -a",
+                            docker_run_cmd,
+                            "sudo docker ps -a"]
+                for command in commands:
+                    print("└─[*] Executing: {}".format(command))
+                    stdin, stdout, stderr = c.exec_command(command)
+                    print("└─[+]", stdout.read())
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
+                c.close()
+
+
+def docker_clear(target_ec2):
+    # find .pem file
+    print("\n==========[02] AWS Connection...")
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
+                fullpath = path+"/"+filename
+                k = paramiko.RSAKey.from_private_key_file(fullpath)
+                c = paramiko.SSHClient()
+                c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print("└─[*] Connecting...")
+
+                c.connect(target_ec2, username="ubuntu", pkey=k)
+                print("└─[+] Connected!")
+
+                # Run Command
+                commands = ["sudo docker stop $(sudo docker ps -a -q)",
+                            "sudo docker rm $(sudo docker ps -a -q)",
+                            "sudo docker rmi $(sudo docker images -a -q)"
+                            ]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -179,3 +217,6 @@ if __name__ == "__main__":
 
     # Docker image & container making
     docker_image_handling(target_ec2)
+
+    # Docker container remove
+    docker_clear(target_ec2)
