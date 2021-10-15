@@ -172,9 +172,38 @@ def docker_image_handling(target_ec2):
                 c.close()
 
 
+def data_in_out(target_ec2):
+    # find .pem file
+    print("\n==========[05] Data Injection & Get Results")
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
+                fullpath = path+"/"+filename
+                k = paramiko.RSAKey.from_private_key_file(fullpath)
+                c = paramiko.SSHClient()
+                c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print("└─[*] Connecting...")
+
+                c.connect(target_ec2, username="ubuntu", pkey=k)
+                print("└─[+] Connected!")
+
+                # Run Command
+                commands = [
+                    "sudo docker cp /transmission/. worker-container:/input"]
+                for command in commands:
+                    print("└─[*] Executing: {}".format(command))
+                    stdin, stdout, stderr = c.exec_command(command)
+                    print("└─[+]", stdout.read())
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
+                c.close()
+
+
 def docker_clear(target_ec2):
     # find .pem file
-    print("\n==========[02] AWS Connection...")
+    print("\n==========[XX] Cleaning...")
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -218,5 +247,8 @@ if __name__ == "__main__":
     # Docker image & container making
     docker_image_handling(target_ec2)
 
+    # `transmission` data injection to docker container & make output
+    data_in_out(target_ec2)
+
     # Docker container remove
-    docker_clear(target_ec2)
+    # docker_clear(target_ec2)
