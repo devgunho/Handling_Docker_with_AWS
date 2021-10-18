@@ -84,7 +84,8 @@ def aws_sftp(target_ec2):
                     sftp.put(local_path, target_path)
 
                 # Run Command
-                commands = ["sudo mv /home/ubuntu/transmission /",
+                commands = ["sudo cp -R /home/ubuntu/transmission /",
+                            "sudo chmod -R 777 /transmission",
                             "ls /transmission"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
@@ -138,13 +139,13 @@ def docker_image_handling(target_ec2):
                     dockerhub_info[target_dockerhub_num][1])  # Password
                 # target image
                 dockerhub_tag = dockerhub_info[target_dockerhub_num][2]
-                print(dockerhub_login, dockerhub_tag)
+                # print(dockerhub_login, dockerhub_tag)
 
                 # make login cmd
                 login_cmd = "sudo docker login -u "
                 login_cmd = login_cmd + \
                     dockerhub_login[0] + " -p "+dockerhub_login[1]
-                print(login_cmd)
+                # print(login_cmd)
 
                 # docker pull cmd
                 docker_pull_cmd = "sudo docker pull"
@@ -191,7 +192,7 @@ def data_in_out(target_ec2):
 
                 # Run Command
                 commands = [
-                    "sudo docker cp /transmission/. worker-container:/input"]
+                    "sudo /transmission/evaluation.sh"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -201,7 +202,7 @@ def data_in_out(target_ec2):
                 c.close()
 
 
-def docker_clear(target_ec2):
+def clear_all(target_ec2):
     # find .pem file
     print("\n==========[XX] Cleaning...")
     for (path, dir, files) in os.walk("./private"):
@@ -219,10 +220,13 @@ def docker_clear(target_ec2):
                 print("└─[+] Connected!")
 
                 # Run Command
-                commands = ["sudo docker stop $(sudo docker ps -a -q)",
-                            "sudo docker rm $(sudo docker ps -a -q)",
-                            "sudo docker rmi $(sudo docker images -a -q)"
-                            ]
+                commands = [
+                    "sudo rm -rf /home/ubuntu/transmission",
+                    "sudo rm -rf /transmission",
+                    "sudo docker stop $(sudo docker ps -a -q)",
+                    "sudo docker rm $(sudo docker ps -a -q)",
+                    "sudo docker rmi $(sudo docker images -a -q)"
+                ]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -250,5 +254,5 @@ if __name__ == "__main__":
     # `transmission` data injection to docker container & make output
     data_in_out(target_ec2)
 
-    # Docker container remove
-    # docker_clear(target_ec2)
+    # Docker container remove & delete transmission dir.
+    # clear_all(target_ec2)
