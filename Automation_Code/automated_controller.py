@@ -54,9 +54,10 @@ def aws_connect(target_ec2):
                 c.close()
 
 
-def aws_sftp(target_ec2):
+def aws_sftp_send(target_ec2):
     # find .pem file
-    print("\n==========[03] File transmission (Controller to Worker (EC2))")
+    print(
+        "\n==========[03] Sender: File transmission (Controller to Worker (EC2))")
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -202,6 +203,40 @@ def data_in_out(target_ec2):
                 c.close()
 
 
+def aws_sftp_receive(target_ec2):
+    # find .pem file
+    print(
+        "\n==========[06] Receiver: File transmission (Worker (EC2) to Controller)")
+    for (path, dir, files) in os.walk("./private"):
+        for filename in files:
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.pem':
+                print("└─[*] Prepare private key: %s/%s" % (path, filename))
+                fullpath = path+"/"+filename
+                k = paramiko.RSAKey.from_private_key_file(fullpath)
+                c = paramiko.SSHClient()
+                c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print("└─[*] Connecting...")
+
+                c.connect(target_ec2, username="ubuntu", pkey=k)
+                print("└─[+] Connected!")
+
+                # Run Command
+                commands = ["ls /output", "sudo chmod -R 777 /output"]
+                for command in commands:
+                    print("└─[*] Executing: {}".format(command))
+                    stdin, stdout, stderr = c.exec_command(command)
+                    print("└─[+]", stdout.read().decode('ascii'))
+                    print("└──[*] Errors & Warnings")
+                    print("└──[-]", stderr.read())
+
+                # Download
+                sftp = c.open_sftp()
+                sftp.get("/output/evaluation.sh", "./output/evaluation.sh")
+
+                c.close()
+
+
 def clear_all(target_ec2):
     # find .pem file
     print("\n==========[XX] Cleaning...")
@@ -243,16 +278,19 @@ if __name__ == "__main__":
     target_ec2 = get_aws_ec2_info()
 
     # ec2 connection & mkdir
-    aws_connect(target_ec2)
+    # aws_connect(target_ec2)
 
     # Send files (transmission)
-    aws_sftp(target_ec2)
+    # aws_sftp_send(target_ec2)
 
     # Docker image & container making
-    docker_image_handling(target_ec2)
+    # docker_image_handling(target_ec2)
 
     # `transmission` data injection to docker container & make output
-    data_in_out(target_ec2)
+    # data_in_out(target_ec2)
+
+    # Receive files
+    aws_sftp_receive(target_ec2)
 
     # Docker container remove & delete transmission dir.
     # clear_all(target_ec2)
