@@ -1,8 +1,6 @@
-from threading import local
-from paramiko import transport
-import pysftp
 import csv
 import os
+import time
 import paramiko
 
 
@@ -117,22 +115,29 @@ def docker_image_handling(target_ec2):
                 # Get dockerhub info (dockerhub_info.csv)
                 dockerhub_login = []
                 dockerhub_tag = ""
-                f = open("./private/dockerhub_info.csv", "r", encoding="utf-8")
-                lines = csv.reader(f)
-                next(lines, None)
-                cnt = 1
                 dockerhub_info = []
-                for line in lines:
-                    print("└─[*]", cnt, ":", line[0],
-                          "|", line[1], "|", line[2])
-                    temp = []
-                    temp.append(line[0])
-                    temp.append(line[1])
-                    temp.append(line[2])
-                    dockerhub_info.append(temp)
-                    cnt += 1
-                print("└──[*] Select Docker Image: ", end="")
-                target_dockerhub_num = input()
+                target_dockerhub_num = "0"
+                while(target_dockerhub_num == "0"):
+                    f = open("./private/dockerhub_info.csv",
+                             "r", encoding="utf-8")
+                    lines = csv.reader(f)
+                    next(lines, None)
+                    cnt = 1
+                    dockerhub_info = []
+
+                    print("└─[+] Dockerhub Info. read")
+                    for line in lines:
+                        print("└─[*]", cnt, ":", line[0],
+                              "|", line[1], "|", line[2])
+                        temp = []
+                        temp.append(line[0])
+                        temp.append(line[1])
+                        temp.append(line[2])
+                        dockerhub_info.append(temp)
+                        cnt += 1
+                    print("└──[*] Select Docker Image, ", end="")
+                    target_dockerhub_num = input("\"0\" call a new list: ")
+
                 target_dockerhub_num = int(target_dockerhub_num) - 1
                 dockerhub_login.append(
                     dockerhub_info[target_dockerhub_num][0])  # Username
@@ -140,7 +145,6 @@ def docker_image_handling(target_ec2):
                     dockerhub_info[target_dockerhub_num][1])  # Password
                 # target image
                 dockerhub_tag = dockerhub_info[target_dockerhub_num][2]
-                # print(dockerhub_login, dockerhub_tag)
 
                 # make login cmd
                 login_cmd = "sudo docker login -u "
@@ -171,7 +175,10 @@ def docker_image_handling(target_ec2):
                     print("└─[+]", stdout.read())
                     print("└──[*] Errors & Warnings")
                     print("└──[-]", stderr.read())
+
                 c.close()
+
+    return dockerhub_tag
 
 
 def data_in_out(target_ec2):
@@ -193,7 +200,8 @@ def data_in_out(target_ec2):
 
                 # Run Command
                 commands = [
-                    "sudo /transmission/evaluation.sh"]
+                    "bash /transmission/sed.sh",
+                    "bash /transmission/evaluation.sh"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -203,10 +211,21 @@ def data_in_out(target_ec2):
                 c.close()
 
 
-def aws_sftp_receive(target_ec2):
+def aws_sftp_receive(target_ec2, dockerhub_tag):
     # find .pem file
     print(
         "\n==========[06] Receiver: File transmission (Worker (EC2) to Controller)")
+    default_local_path = "./output"
+    replace_token_list = "{}[]\"\'/: "
+    for remove_char in replace_token_list:
+        dockerhub_tag = dockerhub_tag.replace(remove_char, "_")
+    default_local_path += dockerhub_tag
+    try:
+        if not os.path.exists(default_local_path):
+            os.makedirs(default_local_path)
+    except OSError:
+        print("└─[-] Error: Failed to create the directory.")
+
     for (path, dir, files) in os.walk("./private"):
         for filename in files:
             ext = os.path.splitext(filename)[-1]
@@ -222,21 +241,15 @@ def aws_sftp_receive(target_ec2):
                 print("└─[+] Connected!")
 
                 # Run Command
-                commands = ["ls /output", "sudo chmod -R 777 /output"]
-                output_list =[]
+                commands = ["ls /output"]
+                output_list = []
 
                 print("└─[*] Executing: {}".format(commands[0]))
                 stdin, stdout, stderr = c.exec_command(commands[0])
                 print("└─[+]", stdout.read())
                 stdin, stdout, stderr = c.exec_command(commands[0])
-                output_list=stdout.read().decode('ascii').split("\n")
+                output_list = stdout.read().decode('ascii').split("\n")
                 output_list.remove('')
-                print("└──[*] Errors & Warnings")
-                print("└──[-]", stderr.read())
-
-                print("└─[*] Executing: {}".format(commands[1]))
-                stdin, stdout, stderr = c.exec_command(commands[1])
-                print("└─[+]", stdout.read())
                 print("└──[*] Errors & Warnings")
                 print("└──[-]", stderr.read())
 
@@ -248,8 +261,7 @@ def aws_sftp_receive(target_ec2):
                     ec2_path = "/output/"
                     ec2_path += entry
                     print(ec2_path)
-                    local_path = "./output/"
-                    local_path = os.path.join(local_path, entry)
+                    local_path = os.path.join(default_local_path, "/", entry)
                     sftp.get(ec2_path, local_path)
 
                 c.close()
@@ -296,6 +308,9 @@ if __name__ == "__main__":
     # Select ec2
     target_ec2 = get_aws_ec2_info()
 
+    # Docker container remove & delete transmission dir.
+    clear_all(target_ec2)
+
     # ec2 connection & mkdir
     aws_connect(target_ec2)
 
@@ -303,13 +318,13 @@ if __name__ == "__main__":
     aws_sftp_send(target_ec2)
 
     # Docker image & container making
-    docker_image_handling(target_ec2)
+    dockerhub_tag = docker_image_handling(target_ec2)
 
     # `transmission` data injection to docker container & make output
     data_in_out(target_ec2)
 
     # Receive files
-    aws_sftp_receive(target_ec2)
+    aws_sftp_receive(target_ec2, dockerhub_tag)
 
     # Docker container remove & delete transmission dir.
-    clear_all(target_ec2)
+    # clear_all(target_ec2)

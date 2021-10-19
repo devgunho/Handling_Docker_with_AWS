@@ -1,4 +1,5 @@
 #!/bin/bash
+
 function timestamp {
     TEXT="Date:"
     DATE=`date +%Y-%m-%d`
@@ -15,4 +16,5 @@ echo $timestamp
 sudo docker exec worker-container /bin/sh -c "/run.sh"
 echo $timestamp
 sudo mkdir -p /output
+sudo chmod -R 777 /output
 sudo docker cp worker-container:/output/. /output/
