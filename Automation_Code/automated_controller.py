@@ -223,16 +223,34 @@ def aws_sftp_receive(target_ec2):
 
                 # Run Command
                 commands = ["ls /output", "sudo chmod -R 777 /output"]
-                for command in commands:
-                    print("└─[*] Executing: {}".format(command))
-                    stdin, stdout, stderr = c.exec_command(command)
-                    print("└─[+]", stdout.read().decode('ascii'))
-                    print("└──[*] Errors & Warnings")
-                    print("└──[-]", stderr.read())
+                output_list =[]
+
+                print("└─[*] Executing: {}".format(commands[0]))
+                stdin, stdout, stderr = c.exec_command(commands[0])
+                print("└─[+]", stdout.read())
+                stdin, stdout, stderr = c.exec_command(commands[0])
+                output_list=stdout.read().decode('ascii').split("\n")
+                output_list.remove('')
+                print("└──[*] Errors & Warnings")
+                print("└──[-]", stderr.read())
+
+                print("└─[*] Executing: {}".format(commands[1]))
+                stdin, stdout, stderr = c.exec_command(commands[1])
+                print("└─[+]", stdout.read())
+                print("└──[*] Errors & Warnings")
+                print("└──[-]", stderr.read())
 
                 # Download
                 sftp = c.open_sftp()
-                sftp.get("/output/evaluation.sh", "./output/evaluation.sh")
+                print("└─[*] Receive targets:", output_list)
+                for entry in output_list:
+                    print("└──[*] Receiving target:", entry, end=' ')
+                    ec2_path = "/output/"
+                    ec2_path += entry
+                    print(ec2_path)
+                    local_path = "./output/"
+                    local_path = os.path.join(local_path, entry)
+                    sftp.get(ec2_path, local_path)
 
                 c.close()
 
@@ -258,6 +276,7 @@ def clear_all(target_ec2):
                 commands = [
                     "sudo rm -rf /home/ubuntu/transmission",
                     "sudo rm -rf /transmission",
+                    "sudo rm -rf /output",
                     "sudo docker stop $(sudo docker ps -a -q)",
                     "sudo docker rm $(sudo docker ps -a -q)",
                     "sudo docker rmi $(sudo docker images -a -q)"
@@ -278,19 +297,19 @@ if __name__ == "__main__":
     target_ec2 = get_aws_ec2_info()
 
     # ec2 connection & mkdir
-    # aws_connect(target_ec2)
+    aws_connect(target_ec2)
 
     # Send files (transmission)
-    # aws_sftp_send(target_ec2)
+    aws_sftp_send(target_ec2)
 
     # Docker image & container making
-    # docker_image_handling(target_ec2)
+    docker_image_handling(target_ec2)
 
     # `transmission` data injection to docker container & make output
-    # data_in_out(target_ec2)
+    data_in_out(target_ec2)
 
     # Receive files
     aws_sftp_receive(target_ec2)
 
     # Docker container remove & delete transmission dir.
-    # clear_all(target_ec2)
+    clear_all(target_ec2)
