@@ -261,7 +261,8 @@ def aws_sftp_receive(target_ec2, dockerhub_tag):
                     ec2_path = "/output/"
                     ec2_path += entry
                     print(ec2_path)
-                    local_path = os.path.join(default_local_path, "/", entry)
+                    local_path = os.path.join(default_local_path, "/")
+                    local_path = os.path.join(default_local_path, entry)
                     sftp.get(ec2_path, local_path)
 
                 c.close()
