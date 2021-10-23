@@ -4,7 +4,7 @@
 
 ## Automation_Code
 
-![Full Architecture.drawio](Automation_Code/Full Architecture.drawio.png)
+![Full Architecture.drawio](README.assets/Full Architecture.drawio.png)
 
 <br/>
 
