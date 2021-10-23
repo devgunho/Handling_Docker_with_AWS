@@ -41,8 +41,10 @@ def aws_connect(target_ec2):
                 print("└─[+] Connected!")
 
                 # Run Command
-                commands = ["sudo mkdir /home/ubuntu/transmission",
-                            "sudo chmod -R 777 /home/ubuntu/transmission"]
+                commands = ["sudo mkdir /home/ubuntu/input",
+                            "sudo chmod -R 777 /home/ubuntu/input",
+                            "sudo mkdir /home/ubuntu/activator",
+                            "sudo chmod -R 777 /home/ubuntu/activator"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -72,20 +74,33 @@ def aws_sftp_send(target_ec2):
 
                 sftp = c.open_sftp()
 
-                entries = os.listdir('./transmission')
+                entries = os.listdir('./transmission_activator')
                 for entry in entries:
-                    print("└──[*] Send target:", entry, end=' ')
-                    local_path = "./transmission/"
+                    print("└──[*] Send target (Activator):", entry, end=' ')
+                    local_path = "./transmission_activator/"
                     local_path = os.path.join(local_path, entry)
                     print(local_path)
-                    target_path = "/home/ubuntu/transmission/"
+                    target_path = "/home/ubuntu/activator/"
+                    target_path = os.path.join(target_path, entry)
+                    sftp.put(local_path, target_path)
+                
+                entries = os.listdir('./transmission_dataset')
+                for entry in entries:
+                    print("└──[*] Send target (Dataset):", entry, end=' ')
+                    local_path = "./transmission_dataset/"
+                    local_path = os.path.join(local_path, entry)
+                    print(local_path)
+                    target_path = "/home/ubuntu/input/"
                     target_path = os.path.join(target_path, entry)
                     sftp.put(local_path, target_path)
 
                 # Run Command
-                commands = ["sudo cp -R /home/ubuntu/transmission /",
-                            "sudo chmod -R 777 /transmission",
-                            "ls /transmission"]
+                commands = ["sudo cp -R /home/ubuntu/activator /",
+                            "sudo chmod -R 777 /activator",
+                            "ls /activator",
+                            "sudo cp -R /home/ubuntu/input /",
+                            "sudo chmod -R 777 /input",
+                            "ls /input"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -95,7 +110,7 @@ def aws_sftp_send(target_ec2):
                 c.close()
 
 
-def docker_image_handling(target_ec2):
+def docker_image_handling(target_ec2, counter):
     # find .pem file
     print("\n==========[04] Docker Setting...")
     for (path, dir, files) in os.walk("./private"):
@@ -161,6 +176,7 @@ def docker_image_handling(target_ec2):
                     " worker-container" + dockerhub_tag
 
                 # Run Command
+                counter+=1
                 commands = ["sudo docker logout",
                             login_cmd,
                             "sudo docker info | grep Username",
@@ -178,7 +194,7 @@ def docker_image_handling(target_ec2):
 
                 c.close()
 
-    return dockerhub_tag
+    return dockerhub_tag, counter
 
 
 def data_in_out(target_ec2):
@@ -200,8 +216,8 @@ def data_in_out(target_ec2):
 
                 # Run Command
                 commands = [
-                    "bash /transmission/sed.sh",
-                    "bash /transmission/evaluation.sh"]
+                    "bash /activator/sed.sh",
+                    "bash /activator/evaluation.sh"]
                 for command in commands:
                     print("└─[*] Executing: {}".format(command))
                     stdin, stdout, stderr = c.exec_command(command)
@@ -211,11 +227,11 @@ def data_in_out(target_ec2):
                 c.close()
 
 
-def aws_sftp_receive(target_ec2, dockerhub_tag):
+def aws_sftp_receive(target_ec2, dockerhub_tag, evaluate_counter):
     # find .pem file
     print(
         "\n==========[06] Receiver: File transmission (Worker (EC2) to Controller)")
-    default_local_path = "./output"
+    default_local_path = "./output" + str(evaluate_counter)
     replace_token_list = "{}[]\"\'/: "
     for remove_char in replace_token_list:
         dockerhub_tag = dockerhub_tag.replace(remove_char, "_")
@@ -287,9 +303,10 @@ def clear_all(target_ec2):
 
                 # Run Command
                 commands = [
-                    "sudo rm -rf /home/ubuntu/transmission",
-                    "sudo rm -rf /transmission",
-                    "sudo rm -rf /output",
+                    "sudo rm -rf /home/ubuntu/activator",
+                    "sudo rm -rf /home/ubuntu/input",
+                    "sudo rm -rf /activator",
+                    "sudo rm -rf /input",
                     "sudo docker stop $(sudo docker ps -a -q)",
                     "sudo docker rm $(sudo docker ps -a -q)",
                     "sudo docker rmi $(sudo docker images -a -q)"
@@ -305,27 +322,29 @@ def clear_all(target_ec2):
 
 if __name__ == "__main__":
     print("==========[00] Automated Controler Start")
+    evaluate_counter=0
 
     # Select ec2
     target_ec2 = get_aws_ec2_info()
 
-    # Docker container remove & delete transmission dir.
-    clear_all(target_ec2)
+    while(1):
+        # Docker container remove & delete transmission dir.
+        clear_all(target_ec2)
 
-    # ec2 connection & mkdir
-    aws_connect(target_ec2)
+        # ec2 connection & mkdir
+        aws_connect(target_ec2)
 
-    # Send files (transmission)
-    aws_sftp_send(target_ec2)
+        # Send files (transmission)
+        aws_sftp_send(target_ec2)
 
-    # Docker image & container making
-    dockerhub_tag = docker_image_handling(target_ec2)
+        # Docker image & container making
+        dockerhub_tag, evaluate_counter = docker_image_handling(target_ec2, evaluate_counter)
 
-    # `transmission` data injection to docker container & make output
-    data_in_out(target_ec2)
+        # `transmission` data injection to docker container & make output
+        data_in_out(target_ec2)
 
-    # Receive files
-    aws_sftp_receive(target_ec2, dockerhub_tag)
+        # Receive files
+        aws_sftp_receive(target_ec2, dockerhub_tag, evaluate_counter)
 
     # Docker container remove & delete transmission dir.
     # clear_all(target_ec2)
