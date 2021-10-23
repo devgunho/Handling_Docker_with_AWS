@@ -1,8 +1,18 @@
 # Handling Docker Container A to Z
 
-**Make Docker Private Registry & Manage docker containers with AWS**
+<br/>
 
-- Ubuntu 18.04
+## Automation_Code
+
+![Full Architecture.drawio](Automation_Code/Full Architecture.drawio.png)
+
+<br/>
+
+<br/>
+
+## Instruction Commands
+
+**Make Docker Private Registry & Manage docker containers with AWS**
 
 <br/>
 
