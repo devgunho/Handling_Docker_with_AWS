@@ -35,6 +35,8 @@ $ ifconfig
 
 <br/>
 
+<br/>
+
 ### 2-A. Docker container from AWS (Client)
 
 ```bash
@@ -62,39 +64,18 @@ $ sudo docker attach team-a-container1
 #### docker container commit
 
 ````bash
+$ sudo docker stop team-a-container1
 $ docker container commit -a "devgun" -m "test comment" team-a-container1 team-a-submit:1.0
 ````
 
 <br/>
 
-#### A. push to Amazon ECR
+#### A. push to AWS
 
 ```bash
 $ sudo apt install awscli
 $ docker tag team-a/submit:1.0 {aws_account_id}.dkr.ecr.ap-northeast-2.amazonaws.com/team-a/submit:1.0
 $ docker push {aws_account_id}.dkr.ecr.ap-northeast-2.amazonaws.com/team-a/submit:1.0
-```
-
-<br/>
-
-#### B. push to dockerhub
-
-```bash
-$ docker tag team-a-submit:1.0 devgunho/team-a-submit:1.0
-$ docker push devgunho/team-a-submit:1.0
-$ docker tag team-a-submit:1.0 devgunho/team-b-submit:1.0
-$ docker push devgunho/team-b-submit:1.0
-```
-
-#### pull from dockerhub
-
-```bash
-```
-
-#### `docker cp` from container to host
-
-```bash
-$ sudo docker cp team-a-container-submit-1:/Challenge-Master /
 ```
 
 <br/>
@@ -125,6 +106,19 @@ $ service docker state
 $ sudo docker run --name local-registry -d -p 5000:5000 registry
 $ sudo docker container ls
 ```
+
+<br/>
+
+#### B. push to dockerhub
+
+```bash
+$ docker tag team-a-submit:1.0 devgunho/team-a-submit:1.0
+$ docker push devgunho/team-a-submit:1.0
+$ docker tag team-a-submit:1.0 devgunho/team-b-submit:1.0
+$ docker push devgunho/team-b-submit:1.0
+```
+
+<br/>
 
 <br/>
 
@@ -166,41 +160,6 @@ registry          Up 5 hours				local-registry
 ```bash
 $ sudo docker exec -it dev-env2 bash
 :/# apt-get update
-```
-
-<br/>
-
-`docker diff`
-
-```bash
-$ sudo docker diff dev-env2
-C /var
-C /var/lib
-C /var/lib/apt
-C /var/lib/apt/lists
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_multiverse_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_InRelease
-A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_universe_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_main_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_universe_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_restricted_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/lock
-A /var/lib/apt/lists/partial
-A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_restricted_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_InRelease
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_restricted_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_InRelease
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_main_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/auxfiles
-A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_main_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_universe_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_main_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_multiverse_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_universe_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_multiverse_binary-amd64_Packages.lz4
-A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_InRelease
-C /root
-A /root/.bash_history
 ```
 
 <br/>
@@ -307,14 +266,6 @@ $ docker push localhost:5000/dev-env3
 
 <br/>
 
-##### # Issue 02
-
-```bash
-An image does not exist locally with the tag: localhost:5000/dev-env1
-```
-
-<br/>
-
 ```bash
 $ sudo apt install curl
 $ curl -X GET http://localhost:5000/v2/_catalog
@@ -323,12 +274,53 @@ $ curl -X GET http://localhost:5000/v2/_catalog
 
 <br/>
 
-##### # Issue 03
+<br/>
+
+----
+
+### 5. etc.
+
+<br/>
+
+#### `docker cp` from container to host
 
 ```bash
-$ curl -X GET https://{hostIP}
-curl: (7) Failed to connect to {ServerIP} port 443: Connection refused
+$ sudo docker cp team-a-container-submit-1:/Challenge-Master /
 ```
 
 <br/>
 
+#### `docker diff`
+
+```bash
+$ sudo docker diff dev-env2
+C /var
+C /var/lib
+C /var/lib/apt
+C /var/lib/apt/lists
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_InRelease
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/lock
+A /var/lib/apt/lists/partial
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_InRelease
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_restricted_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_InRelease
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/auxfiles
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-backports_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_main_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic_universe_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_bionic-security_multiverse_binary-amd64_Packages.lz4
+A /var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_bionic-updates_InRelease
+C /root
+A /root/.bash_history
+```
+
+<br/>
