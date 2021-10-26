@@ -2,7 +2,7 @@
 
 <br/>
 
-## Automation_Code
+## `automation_code` Directory
 
 ![Full_Architecture.drawio](README.assets/Full_Architecture.drawio.png)
 
@@ -10,7 +10,9 @@
 
 <br/>
 
-## Instruction Commands
+<br/>
+
+## Docker ops. Instruction Commands
 
 **Make Docker Private Registry & Manage docker containers with AWS**
 
@@ -324,3 +326,10 @@ A /root/.bash_history
 ```
 
 <br/>
+
+<br/>
+
+<br/>
+
+## `ops_with_bash` Directory 🇰🇷
+

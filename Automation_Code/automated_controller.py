@@ -1,26 +1,26 @@
 import csv
 import os
-import time
 import paramiko
 
 
 def get_aws_ec2_info():
     # find aws ec2 info from ./private/ec2_info.csv
     print("\n==========[01] Select AWS Server")
-    target_ec2 = ""
-    ec2_info = []
+    ec2_ip_info = []
+    ec2_name_info = []
     f = open("./private/ec2_info.csv", "r", encoding="utf-8")
     lines = csv.reader(f)
     next(lines, None)
     cnt = 1
     for line in lines:
         print("└─[*]", cnt, ":", line[0], "|", line[1])
-        ec2_info.append(line[1])
+        ec2_ip_info.append(line[1])
+        ec2_name_info.append(line[0])
         cnt += 1
     print("└──[*] Select EC2: ", end="")
     target_ec2_num = input()
     f.close()
-    return str(ec2_info[int(target_ec2_num)-1])
+    return str(ec2_name_info[int(target_ec2_num)-1]), str(ec2_ip_info[int(target_ec2_num)-1])
 
 
 def aws_connect(target_ec2):
@@ -83,7 +83,7 @@ def aws_sftp_send(target_ec2):
                     target_path = "/home/ubuntu/activator/"
                     target_path = os.path.join(target_path, entry)
                     sftp.put(local_path, target_path)
-                
+
                 entries = os.listdir('./transmission_dataset')
                 for entry in entries:
                     print("└──[*] Send target (Dataset):", entry, end=' ')
@@ -176,7 +176,7 @@ def docker_image_handling(target_ec2, counter):
                     " worker-container" + dockerhub_tag
 
                 # Run Command
-                counter+=1
+                counter += 1
                 commands = ["sudo docker logout",
                             login_cmd,
                             "sudo docker info | grep Username",
@@ -283,6 +283,29 @@ def aws_sftp_receive(target_ec2, dockerhub_tag, evaluate_counter):
 
                 c.close()
 
+    return default_local_path
+
+
+def remove_logs(result_dir_path):
+    print("\n==========[07] Concatenate Log files & Remove log files")
+    start_log = result_dir_path + "/start.log"
+    end_log = result_dir_path + "/end.log"
+    f = open(start_log, "r")
+    start_time = f.readline()
+    f.close()
+    os.remove(start_log)
+
+    f = open(end_log, "r")
+    end_time = f.readline()
+    f.close()
+    os.remove(end_log)
+
+    logfile_path = result_dir_path+"-log.txt"
+    f = open(logfile_path, 'w+')
+    f.write(start_time)
+    f.write(end_time)
+    f.close()
+
 
 def clear_all(target_ec2):
     # find .pem file
@@ -307,6 +330,7 @@ def clear_all(target_ec2):
                     "sudo rm -rf /home/ubuntu/input",
                     "sudo rm -rf /activator",
                     "sudo rm -rf /input",
+                    "sudo rm -rf /output",
                     "sudo docker stop $(sudo docker ps -a -q)",
                     "sudo docker rm $(sudo docker ps -a -q)",
                     "sudo docker rmi $(sudo docker images -a -q)"
@@ -322,29 +346,39 @@ def clear_all(target_ec2):
 
 if __name__ == "__main__":
     print("==========[00] Automated Controler Start")
-    evaluate_counter=0
+    evaluate_counter = 0
 
     # Select ec2
-    target_ec2 = get_aws_ec2_info()
+    target_ec2_name, target_ec2_ip = get_aws_ec2_info()
 
     while(1):
         # Docker container remove & delete transmission dir.
-        clear_all(target_ec2)
+        clear_all(target_ec2_ip)
 
         # ec2 connection & mkdir
-        aws_connect(target_ec2)
+        aws_connect(target_ec2_ip)
 
         # Send files (transmission)
-        aws_sftp_send(target_ec2)
+        aws_sftp_send(target_ec2_ip)
 
         # Docker image & container making
-        dockerhub_tag, evaluate_counter = docker_image_handling(target_ec2, evaluate_counter)
+        dockerhub_tag, evaluate_counter = docker_image_handling(
+            target_ec2_ip, evaluate_counter)
 
         # `transmission` data injection to docker container & make output
-        data_in_out(target_ec2)
+        data_in_out(target_ec2_ip)
 
         # Receive files
-        aws_sftp_receive(target_ec2, dockerhub_tag, evaluate_counter)
+        result_dir_path = aws_sftp_receive(
+            target_ec2_ip, dockerhub_tag, evaluate_counter)
+
+        # Concatenate Log files & Remove log files
+        remove_logs(result_dir_path)
+
+        # print("\n==========[08] Run Scoring Script")
+
+        # Docker container remove & delete transmission dir.
+        clear_all(target_ec2_ip)
 
     # Docker container remove & delete transmission dir.
     # clear_all(target_ec2)
