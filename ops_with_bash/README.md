@@ -1,4 +1,4 @@
-## `ops_with_bash` Directory 🇰🇷
+## `ops_with_bash`
 
 - `executable` : 실행 가능한 프로그램을 담는 파일
 - `script` : 실행 파일, 사람이 읽을 수 있는 텍스트 파일
